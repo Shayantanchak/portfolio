@@ -1,0 +1,489 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  /* Colors */
+  --bg-color: #0a0e27;
+  --bg-darker: #060919;
+  --accent-lime: #a3ff12;
+  --accent-orange: #ff8c00;
+  
+  /* Glow/Alpha Colors */
+  --accent-lime-glow: rgba(163, 255, 18, 0.15);
+  --accent-lime-glow-solid: rgba(163, 255, 18, 0.4);
+  --accent-orange-glow: rgba(255, 140, 0, 0.15);
+  --accent-orange-glow-solid: rgba(255, 140, 0, 0.4);
+  
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  
+  /* Glassmorphism */
+  --glass-bg: rgba(10, 14, 39, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: rgba(0, 0, 0, 0.5);
+
+  /* Fonts */
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Base resets */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-lime) var(--bg-darker);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-orange);
+  border-radius: 5px;
+  border: 2px solid var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-lime);
+}
+
+/* Scroll Container & Viewport Setup for 3D */
+.scroll-container {
+  position: relative;
+  width: 100%;
+  /* Height will be driven by the number of sections * 100vh, e.g., 700vh */
+  z-index: 1;
+}
+
+.viewport {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #11173d 0%, #060919 100%);
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Background Stars and Glowing Nebulae */
+.stars-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+    radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+    radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 20px);
+  background-size: 550px 550px, 350px 350px, 250px 250px;
+  background-position: 0 0, 40px 60px, 130px 270px;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.nebula-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  opacity: 0.12;
+  z-index: 1;
+  transition: all 1.5s ease-in-out;
+}
+
+.nebula-glow.lime {
+  background: var(--accent-lime);
+  top: -10%;
+  left: 10%;
+}
+
+.nebula-glow.orange {
+  background: var(--accent-orange);
+  bottom: -10%;
+  right: 10%;
+}
+
+/* 3D Scene Engine */
+.scene-3d {
+  width: 100%;
+  height: 100%;
+  perspective: 1000px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.camera-rig,
+.camera-rig-zoom,
+.camera-rig-tilt {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  transform-style: preserve-3d;
+  will-change: transform;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Parallax Sections & Layers */
+.section-3d {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  transform-style: preserve-3d;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+  pointer-events: none;
+}
+
+.section-3d.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.section-3d.active {
+  pointer-events: auto;
+}
+
+/* Layers representing depth */
+.layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+/* 
+  Depths are set via CSS variables or directly.
+  Far layers: translated away (-Z), scaled up to keep size.
+  Near layers: translated closer (+Z), scaled down to fit.
+*/
+.layer-far {
+  transform: translate3d(0, 0, -400px) scale(1.4);
+  z-index: 1;
+  opacity: 0.85;
+}
+
+.layer-mid {
+  transform: translate3d(0, 0, 0px);
+  z-index: 2;
+}
+
+.layer-near {
+  transform: translate3d(0, 0, 300px) scale(0.7);
+  z-index: 3;
+}
+
+.layer-content {
+  transform: translate3d(0, 0, 100px);
+  z-index: 4;
+  pointer-events: auto;
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Glassmorphism Card Style */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  border-radius: 16px;
+  padding: 2.5rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.glass-card.glow-lime:hover {
+  border-color: rgba(163, 255, 18, 0.3);
+  box-shadow: 0 8px 32px rgba(163, 255, 18, 0.05), 0 0 15px var(--accent-lime-glow);
+}
+
+.glass-card.glow-orange:hover {
+  border-color: rgba(255, 140, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(255, 140, 0, 0.05), 0 0 15px var(--accent-orange-glow);
+}
+
+/* Typography Utilities */
+.text-lime {
+  color: var(--accent-lime);
+  text-shadow: 0 0 8px var(--accent-lime-glow-solid);
+}
+
+.text-orange {
+  color: var(--accent-orange);
+  text-shadow: 0 0 8px var(--accent-orange-glow-solid);
+}
+
+.title-large {
+  font-size: clamp(3rem, 8vw, 6.5rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+}
+
+.title-medium {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.5rem;
+}
+
+.title-small {
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.paragraph {
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+/* SVG / Vector Island placeholders styling */
+.island-svg {
+  width: 500px;
+  height: auto;
+  filter: drop-shadow(0 15px 30px rgba(0,0,0,0.6));
+}
+
+/* Navigation Indicator overlay */
+.nav-indicators {
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  pointer-events: auto;
+}
+
+.nav-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.nav-dot:hover {
+  background: var(--text-primary);
+  transform: scale(1.2);
+}
+
+.nav-dot.active {
+  background: var(--accent-lime);
+  border-color: var(--bg-color);
+  box-shadow: 0 0 8px var(--accent-lime);
+  transform: scale(1.3);
+}
+
+.nav-dot.active.orange {
+  background: var(--accent-orange);
+  box-shadow: 0 0 8px var(--accent-orange);
+}
+
+.nav-label {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.nav-dot:hover .nav-label {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Subtle Interactive Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.8rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  border: none;
+}
+
+.btn-lime {
+  background: var(--accent-lime);
+  color: var(--bg-darker);
+  box-shadow: 0 4px 15px rgba(163, 255, 18, 0.2);
+}
+
+.btn-lime:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(163, 255, 18, 0.4), 0 0 10px rgba(163, 255, 18, 0.3);
+}
+
+.btn-orange {
+  background: var(--accent-orange);
+  color: var(--text-primary);
+  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.2);
+}
+
+.btn-orange:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 140, 0, 0.4), 0 0 10px rgba(255, 140, 0, 0.3);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+}
+
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Loading Screen Styles */
+.loader-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-darker);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.loader-logo {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.loader-track {
+  width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.loader-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-orange), var(--accent-lime));
+  width: 0%;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 10px var(--accent-lime);
+}
+
+.loader-text {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Custom grid for projects and experience list */
+.grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .grid-2col, .grid-3col {
+    grid-template-columns: 1fr;
+  }
+  .layer-far {
+    transform: translate3d(0, 0, -400px) scale(1.1);
+  }
+  .layer-near {
+    transform: translate3d(0, 0, 200px) scale(0.85);
+  }
+}
